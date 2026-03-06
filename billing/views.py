@@ -51,11 +51,37 @@ class SubscribeView(APIView):
                 next_due_date=next_due_date
             )
             
-            return Response({
+            response_data = {
                 "message": "Subscription created successfully",
                 "subscription_id": sub.id,
                 "asaas_subscription_id": asaas_sub.get('id')
-            }, status=status.HTTP_201_CREATED)
+            }
+
+            if billing_type == 'PIX':
+                # Fetch the charges associated with this subscription
+                payments_data = asaas_service.get_subscription_payments(asaas_sub.get('id'))
+                # Asaas returns a paginated list of payments in the 'data' field
+                payments = payments_data.get('data', [])
+                if payments:
+                    # The most recent payment (first installment)
+                    first_payment = payments[0]
+                    first_payment_id = first_payment.get('id')
+                    
+                    # Create a local Payment record for this installment too
+                    Payment.objects.create(
+                        user=user,
+                        asaas_payment_id=first_payment_id,
+                        value=value,
+                        billing_type='PIX',
+                        status='PENDING',
+                        due_date=next_due_date
+                    )
+                    
+                    # Get and include Pix QR Code
+                    pix_data = asaas_service.get_pix_qrcode(first_payment_id)
+                    response_data['pix'] = pix_data
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
             
         except asaas_service.AsaasAPIException as e:
             return Response({"error": str(e)}, status=e.status_code)

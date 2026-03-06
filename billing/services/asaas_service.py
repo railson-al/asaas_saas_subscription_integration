@@ -13,13 +13,16 @@ def get_asaas_headers():
         'Content-Type': 'application/json'
     }
 
-def create_customer(user):
+def create_customer(user, cpf_cnpj=None):
     url = f"{settings.ASAAS_API_URL}/customers"
     payload = {
         "name": user.get_full_name() or user.username,
         "email": user.email,
-        # Other required fields like cpfCnpj should be gathered from user profile ideally
     }
+    
+    if cpf_cnpj:
+        payload["cpfCnpj"] = cpf_cnpj
+
     
     response = requests.post(url, json=payload, headers=get_asaas_headers())
     
@@ -108,5 +111,13 @@ def get_payment(payment_id):
     if response.status_code == 200:
         return response.json()
     raise AsaasAPIException(detail=f"Error getting Asaas payment: {response.text}")
+
+def get_subscription_payments(subscription_id):
+    url = f"{settings.ASAAS_API_URL}/subscriptions/{subscription_id}/payments"
+    response = requests.get(url, headers=get_asaas_headers())
+    if response.status_code == 200:
+        return response.json()
+    raise AsaasAPIException(detail=f"Error getting Asaas subscription payments: {response.text}")
+
 
 
