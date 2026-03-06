@@ -25,7 +25,8 @@ curl -X POST http://localhost:8000/api/billing/subscribe/ \
 -d '{
     "plan_id": "c92f1b8a-...",
     "billing_type": "CREDIT_CARD",
-    "cycle": "MONTHLY"
+    "cycle": "MONTHLY",
+    "cpf_cnpj": "12345678909"
 }'
 ```
 
@@ -62,7 +63,8 @@ curl -X POST http://localhost:8000/api/billing/subscribe/ \
 -d '{
     "plan_id": "c92f1b8a-...",
     "billing_type": "PIX",
-    "cycle": "MONTHLY"
+    "cycle": "MONTHLY",
+    "cpf_cnpj": "12345678909"
 }'
 ```
 
@@ -111,7 +113,8 @@ curl -X POST http://localhost:8000/api/billing/pay/ \
 -d '{
     "value": "150.00",
     "billing_type": "PIX",
-    "description": "One-hour Consulting"
+    "description": "One-hour Consulting",
+    "cpf_cnpj": "12345678909"
 }'
 ```
 
@@ -150,5 +153,47 @@ async function createCampaign() {
     // Show a modal: "Upgrade to Pro to create more campaigns!"
     showUpgradeModal();
   }
+}
+```
+
+---
+
+## 5. Checking Subscription Status
+
+To check if the current logged-in user has an active subscription and what their plan details are.
+
+**Frontend Request:**
+
+```bash
+curl -X GET http://localhost:8000/api/billing/me/ \
+-H "Authorization: Bearer <your_access_token>"
+```
+
+**Response (with active subscription):**
+
+```json
+{
+    "id": "subscription-uuid",
+    "status": "ACTIVE",
+    "billing_type": "PIX",
+    "cycle": "MONTHLY",
+    "next_due_date": "2026-04-06",
+    "plan": {
+        "id": "plan-uuid",
+        "name": "Pro Plan",
+        "monthly_price": "49.90",
+        "yearly_price": "499.00",
+        "features": {
+            "max_campaigns": 10
+        }
+    }
+}
+```
+
+**Response (no subscription):**
+
+```json
+{
+    "status": "no_subscription"
 }
 ```

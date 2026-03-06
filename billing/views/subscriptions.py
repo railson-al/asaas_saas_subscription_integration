@@ -6,8 +6,21 @@ from django.shortcuts import get_object_or_404
 from datetime import date
 from billing.models import Plan, Subscription, Payment
 from billing.services import asaas_service
+from billing.serializers import SubscriptionSerializer
+
+class SubscriptionStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        subscription = getattr(request.user, 'subscription', None)
+        if not subscription:
+            return Response({"status": "no_subscription"}, status=status.HTTP_200_OK)
+            
+        serializer = SubscriptionSerializer(subscription)
+        return Response(serializer.data)
 
 class SubscribeView(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request):

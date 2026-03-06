@@ -1,5 +1,5 @@
 from .payments import PaymentView
-from .subscriptions import SubscribeView
+from .subscriptions import SubscribeView, SubscriptionStatusView
 from .webhooks import WebhookView
 from .plans import PlanViewSet
 
