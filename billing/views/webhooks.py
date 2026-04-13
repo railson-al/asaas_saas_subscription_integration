@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from django.conf import settings
+from django.db import IntegrityError
 from billing.models import Subscription, Payment
 import logging
 
@@ -22,7 +23,23 @@ class WebhookView(APIView):
         payment_id = payment_data.get('id')
         
         try:
-            if event == 'PAYMENT_RECEIVED':
+            if event == 'PAYMENT_CREATED':
+                if subscription_id and payment_id:
+                    sub = Subscription.objects.filter(asaas_subscription_id=subscription_id).first()
+                    if sub:
+                        try:
+                            Payment.objects.create(
+                                user=sub.user,
+                                asaas_payment_id=payment_id,
+                                value=payment_data.get('value', 0),
+                                billing_type=payment_data.get('billingType', sub.billing_type),
+                                status='PENDING',
+                                due_date=payment_data.get('dueDate'),
+                            )
+                        except IntegrityError:
+                            logger.info(f"Payment {payment_id} already exists, skipping (idempotent)")
+
+            elif event == 'PAYMENT_RECEIVED':
                 if payment_id:
                     Payment.objects.filter(asaas_payment_id=payment_id).update(status='RECEIVED')
                 if subscription_id:
